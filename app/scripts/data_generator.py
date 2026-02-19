@@ -1,4 +1,3 @@
-# scripts/data_generator.py
 """
 Data generator for simulating machine measurements.
 Sends realistic measurement data to the API at configurable intervals.
@@ -19,8 +18,8 @@ from app.enums import MachineType
 
 @dataclass
 class Measurement:
-    machine_id: str  # ← String, not UUID (for JSON serialization)
-    timestamp: str  # ← ISO string
+    machine_id: str
+    timestamp: str
     voltage: Optional[float] = None
     current: Optional[float] = None
     rpm: Optional[int] = None
@@ -41,7 +40,7 @@ class MachineSimulator:
         machine_type: MachineType,
         api_url: str = "http://localhost:8000",
     ):
-        self.machine_id = machine_id  # ← Remove comma (was making it a tuple!)
+        self.machine_id = machine_id
         self.machine_type = machine_type
         self.api_url = api_url
         self.client = httpx.Client(base_url=api_url, timeout=10.0, follow_redirects=True)
@@ -54,7 +53,7 @@ class MachineSimulator:
 
         measurement = Measurement(
             machine_id=str(self.machine_id),
-            timestamp=datetime.now(timezone.utc).isoformat(),  # ← Fixed datetime call
+            timestamp=datetime.now(timezone.utc).isoformat(),
         )
 
         if self.machine_type == MachineType.WELDING:
@@ -128,7 +127,6 @@ class MachineSimulator:
         try:
             # Convert dataclass to dict, exclude None values
             payload = {k: v for k, v in asdict(measurement).items() if v is not None}
-            # response = self.client.post("/api/v1/measurements", json=payload)
             response = self.client.post("/api/v1/measurements/async", json=payload)
             response.raise_for_status()
             return True
@@ -192,7 +190,7 @@ def main():
 
     simulator = MachineSimulator(
         machine_id=UUID(args.machine_id),
-        machine_type=MachineType(args.machine_type),  # ← Convert string to enum
+        machine_type=MachineType(args.machine_type),
         api_url=args.api_url,
     )
 
