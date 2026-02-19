@@ -1,0 +1,48 @@
+[project]
+name = "synaptic-hive"
+version = "0.1.0"
+description = "Multi-tenant industrial IoT monitoring platform"
+requires-python = ">=3.12"
+
+dependencies = [
+    # API
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    # Database
+    "sqlalchemy>=2.0.0",
+    "asyncpg>=0.30.0", # Async PostgreSQL driver
+    "alembic>=1.14.0", # Migrations
+    # Pydantic
+    "pydantic>=2.10.0",
+    "pydantic-settings>=2.6.0", # For config/settings
+    # Redis
+    "redis>=5.2.0",
+    # Utilities
+    "python-dotenv>=1.0.0",
+    "psycopg2>=2.9.11",
+    "pydantic-extra-types>=2.11.0",
+    "pycountry>=26.2.16",
+    "httpx>=0.28.1",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+    "httpx>=0.28.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+]
+ignore = ["E501"]  # line too long (we set line-length already)
