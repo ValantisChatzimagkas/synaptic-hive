@@ -2,8 +2,10 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.db.session import get_db
 from app.models.measurement import (
     MeasurementEventCreate,
@@ -40,35 +42,15 @@ def get_measurement(
     )
 
 
-@router.post("/", response_model=MeasurementEventResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/")
 def ingest_measurement(payload: MeasurementEventCreate, db: Session = Depends(get_db)):
     """
     Ingest a single measurement event.
-    The machine must exist, and we denormalize its factory/organization data.
+
+    Routing is controlled by the INGESTION_MODE setting:
+    - "async": publishes to Redis Stream for background processing (returns 202)
+    - "sync": writes directly to TimescaleDB (returns 201)
     """
-    # Fetch machine to get denormalized data
-    machine = machine_service.get_by_id(db, payload.machine_id)
-    if not machine:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Machine with id '{payload.machine_id}' not found",
-        )
-
-    # Create measurement with denormalized fields
-    return measurement_service.create(
-        db,
-        payload,
-        organization_id=machine.organization_id,
-        machine_name=machine.name,
-        machine_type=machine.machine_type,
-        factory_id=machine.factory_id,
-        factory_name=machine.factory.name,  # Access via relationship
-    )
-
-
-@router.post("/async", status_code=status.HTTP_202_ACCEPTED)
-def ingest_measurement_async(payload: MeasurementEventCreate, db: Session = Depends(get_db)):
-    """Ingest a single measurement event (ASYNCHRONOUS)."""
     machine = machine_service.get_by_id(db, payload.machine_id)
     if not machine:
         raise HTTPException(
@@ -84,17 +66,34 @@ def ingest_measurement_async(payload: MeasurementEventCreate, db: Session = Depe
         "factory_name": machine.factory.name,
     }
 
-    message_id = redis_service.publish_measurement(
-        machine_id=payload.machine_id,
-        measurement_payload=payload,  # ← Pass the Pydantic model
-        denormalized_data=denormalized_data,
-    )
+    if settings.INGESTION_MODE == "async":
+        message_id = redis_service.publish_measurement(
+            machine_id=payload.machine_id,
+            measurement_payload=payload,
+            denormalized_data=denormalized_data,
+        )
+        return JSONResponse(
+            status_code=status.HTTP_202_ACCEPTED,
+            content={
+                "status": "accepted",
+                "message": "Measurement queued for processing",
+                "redis_message_id": message_id,
+            },
+        )
 
-    return {
-        "status": "accepted",
-        "message": "Measurement queued for processing",
-        "redis_message_id": message_id,
-    }
+    measurement = measurement_service.create(
+        db,
+        payload,
+        organization_id=machine.organization_id,
+        machine_name=machine.name,
+        machine_type=machine.machine_type,
+        factory_id=machine.factory_id,
+        factory_name=machine.factory.name,
+    )
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content=MeasurementEventResponse.model_validate(measurement).model_dump(mode="json"),
+    )
 
 
 @router.get("/statistics/{machine_id}", response_model=MeasurementStatistics)

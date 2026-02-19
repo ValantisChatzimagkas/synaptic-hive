@@ -16,6 +16,10 @@ class Settings(BaseSettings):
     REDIS_URL: str = ""
     REDIS_STREAM_NAME: str = "measurements"
 
+    # Ingestion: "async" queues measurements via Redis Stream,
+    # "sync" writes directly to the database.
+    INGESTION_MODE: str = "async"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

@@ -127,7 +127,7 @@ class MachineSimulator:
         try:
             # Convert dataclass to dict, exclude None values
             payload = {k: v for k, v in asdict(measurement).items() if v is not None}
-            response = self.client.post("/api/v1/measurements/async", json=payload)
+            response = self.client.post("/api/v1/measurements", json=payload)
             response.raise_for_status()
             return True
         except httpx.HTTPStatusError as e:

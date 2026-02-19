@@ -73,6 +73,7 @@ uvicorn main:app --reload
 |---|---|---|
 | `DATABASE_URL` | PostgreSQL/TimescaleDB connection string | `postgresql://iot_user:iot_password@localhost:5432/iot_db` |
 | `REDIS_URL` | Redis connection string | `redis://localhost:6379/0` |
+| `INGESTION_MODE` | `"async"` (Redis Stream) or `"sync"` (direct DB write) | `async` |
 
 Docker credentials are configured separately in `.env.docker`.
 
@@ -154,8 +155,7 @@ All endpoints are prefixed with `/api/v1`.
 | Method | Path | Description |
 |---|---|---|
 | `GET` | `/measurements` | Query measurements (filter by machine, factory, org, time range) |
-| `POST` | `/measurements` | Ingest measurement (synchronous) |
-| `POST` | `/measurements/async` | Ingest measurement (async via Redis Stream) |
+| `POST` | `/measurements` | Ingest measurement (routing based on `INGESTION_MODE` setting) |
 | `GET` | `/measurements/statistics/{machine_id}` | Aggregate stats (min/max/avg) for a machine |
 
 ## Development

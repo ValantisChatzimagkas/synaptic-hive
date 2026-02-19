@@ -69,7 +69,7 @@ Requires `.env` file with `DATABASE_URL` and `REDIS_URL`. Docker credentials go 
 - Sync SQLAlchemy with `get_db()` dependency for session lifecycle
 - MeasurementEvent table is heavily denormalized (stores machine_name, factory_name, etc.) to avoid JOINs on time-series queries
 - Composite PK `(machine_id, timestamp)` on MeasurementEvent for TimescaleDB hypertable optimization
-- Dual ingestion paths: sync (`POST /measurements/`) and async via Redis Streams (`POST /measurements/async`)
+- Single ingestion endpoint (`POST /measurements/`) with config-based routing: `INGESTION_MODE=async` queues via Redis Streams, `INGESTION_MODE=sync` writes directly to DB
 - All entities use UUID primary keys
 - Update endpoints use PATCH semantics with `model_dump(exclude_unset=True)`
 
