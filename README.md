@@ -167,7 +167,23 @@ ruff format .
 
 # Create a new migration
 alembic revision --autogenerate -m "description"
+```
 
-# Run tests
+### Testing
+
+Tests use a separate `iot_db_test` database (auto-created from your docker-compose TimescaleDB).
+Redis is mocked via fakeredis — no real Redis needed for tests.
+
+```bash
+# Run all tests
 pytest
+
+# Run with coverage report
+pytest --cov --cov-report=term-missing
+
+# Run a specific test file
+pytest tests/test_organizations.py
+
+# Run a specific test
+pytest tests/test_organizations.py::test_create_organization -v
 ```

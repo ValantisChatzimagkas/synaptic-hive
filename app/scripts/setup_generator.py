@@ -25,7 +25,7 @@ class SetupGenerator:
         response = self.client.post("/api/v1/organizations", json=payload)
         response.raise_for_status()
         org = response.json()
-        print(f"✅ Created organization: {org['name']} ({org['id']})")
+        print(f"Created organization: {org['name']} ({org['id']})")
         return org
 
     def create_factory(
@@ -49,7 +49,7 @@ class SetupGenerator:
         response = self.client.post("/api/v1/factories", json=payload)
         response.raise_for_status()
         factory = response.json()
-        print(f"   ✅ Created factory: {factory['name']} ({factory['id']})")
+        print(f"   Created factory: {factory['name']} ({factory['id']})")
         return factory
 
     def create_machine(
@@ -78,7 +78,7 @@ class SetupGenerator:
         response = self.client.post("/api/v1/machines", json=payload)
         response.raise_for_status()
         machine = response.json()
-        print(f"      ✅ Created machine: {machine['name']} ({machine['id']})")
+        print(f"      Created machine: {machine['name']} ({machine['id']})")
         return machine
 
     def generate_hierarchy(
@@ -102,7 +102,7 @@ class SetupGenerator:
             ]
         }
         """
-        print(f"\n🏭 Generating hierarchy for: {org_name}")
+        print(f"\nGenerating hierarchy for: {org_name}")
         print(f"   Factories: {num_factories}")
         print(f"   Machines per factory: {machines_per_factory}\n")
 
@@ -153,7 +153,7 @@ class SetupGenerator:
 
         result = {"organization": org, "factories": factories_data}
 
-        print("\n✅ Hierarchy created successfully!")
+        print("\nHierarchy created successfully!")
         print(f"   Organization: {org['name']}")
         print(f"   Total factories: {num_factories}")
         print(f"   Total machines: {num_factories * machines_per_factory}")
@@ -195,7 +195,7 @@ def main():
             machines_per_factory=args.machines,
         )
     except httpx.HTTPError as e:
-        print(f"\n❌ API Error: {e}")
+        print(f"\nAPI Error: {e}")
         exit(1)
 
 

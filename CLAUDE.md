@@ -41,6 +41,9 @@ uvicorn main:app --reload
 # Run tests
 pytest
 
+# Run tests with coverage
+pytest --cov --cov-report=term-missing
+
 # Lint
 ruff check .
 ruff format .

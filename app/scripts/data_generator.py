@@ -131,10 +131,10 @@ class MachineSimulator:
             response.raise_for_status()
             return True
         except httpx.HTTPStatusError as e:
-            print(f"❌ HTTP {e.response.status_code}: {e.response.text}")
+            print(f"HTTP {e.response.status_code}: {e.response.text}")
             return False
         except Exception as e:
-            print(f"❌ Error sending measurement: {e}")
+            print(f"Error sending measurement: {e}")
             return False
 
     def run(self, interval_seconds: float, duration_seconds: float | None = None):
@@ -145,14 +145,14 @@ class MachineSimulator:
         sent_count = 0
         error_count = 0
 
-        print(f"🤖 Starting simulator for machine {self.machine_id} ({self.machine_type.value})")
-        print(f"📊 Sending 1 measurement every {interval_seconds}s")
+        print(f"Starting simulator for machine {self.machine_id} ({self.machine_type.value})")
+        print(f"Sending 1 measurement every {interval_seconds}s")
 
         try:
             while True:
                 if self.send_measurement():
                     sent_count += 1
-                    print(f"✅ Sent measurement #{sent_count}", end="\r")
+                    print(f"Sent measurement #{sent_count}", end="\r")
                 else:
                     error_count += 1
 
@@ -162,10 +162,10 @@ class MachineSimulator:
                     break
 
         except KeyboardInterrupt:
-            print("\n\n⏹️  Stopped by user")
+            print("\n\nStopped by user")
 
         elapsed = time.time() - start_time
-        print("\n📈 Summary:")
+        print("\nSummary:")
         print(f"   Total sent: {sent_count}")
         print(f"   Errors: {error_count}")
         print(f"   Duration: {elapsed:.1f}s")

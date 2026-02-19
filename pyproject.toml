@@ -28,7 +28,8 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=8.0.0",
-    "pytest-asyncio>=0.24.0",
+    "pytest-cov>=6.0.0",
+    "fakeredis>=2.26.0",
     "httpx>=0.28.0",
 ]
 
@@ -46,3 +47,14 @@ select = [
     "UP",  # pyupgrade
 ]
 ignore = ["E501"]  # line too long (we set line-length already)
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.coverage.run]
+source = ["app"]
+omit = ["app/scripts/*", "app/workers/*"]
+
+[tool.coverage.report]
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]
