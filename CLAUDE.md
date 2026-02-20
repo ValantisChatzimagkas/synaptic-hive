@@ -51,11 +51,16 @@ ruff format .
 # Generate test data
 python -m app.scripts.setup_generator "OrgName" --factories 2 --machines 3
 python -m app.scripts.data_generator
+
+# Frontend (from frontend/ directory)
+pnpm dev        # Start dev server on http://localhost:3000
+pnpm build      # Production build
+pnpm lint       # Run ESLint
 ```
 
 ## Environment
 
-Requires `.env` file with `DATABASE_URL` and `REDIS_URL`. Docker credentials go in `.env.docker`. Python 3.12+.
+Requires `.env` file with `DATABASE_URL` and `REDIS_URL`. Docker credentials go in `.env.docker`. Python 3.12+. Frontend requires Node.js 22+ and pnpm.
 
 ## Architecture
 
@@ -67,6 +72,7 @@ Requires `.env` file with `DATABASE_URL` and `REDIS_URL`. Docker credentials go 
 - `app/core/` — Config (Pydantic BaseSettings), dependencies, Redis client singleton
 - `app/workers/` — Redis Stream consumers for async measurement ingestion
 - `app/scripts/` — Data generation and simulation utilities
+- `frontend/` — Next.js frontend (App Router, TypeScript, Tailwind CSS)
 
 **Key patterns:**
 - Sync SQLAlchemy with `get_db()` dependency for session lifecycle

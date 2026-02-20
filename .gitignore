@@ -11,5 +11,5 @@ wheels/
 # Virtual environments
 .venv
 
-
-# CLAUDE.md
+# Coverage
+.coverage
