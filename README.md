@@ -8,6 +8,7 @@ Synaptic Hive manages a hierarchy of **Organizations > Factories > Machines > Me
 
 ## Tech Stack
 
+- **Next.js** - React frontend (App Router, TypeScript, Tailwind CSS)
 - **FastAPI** - REST API framework
 - **TimescaleDB** - Time-series optimized PostgreSQL
 - **Redis** - Async measurement ingestion via Streams
@@ -41,7 +42,8 @@ Organization
 ### Prerequisites
 
 - Python 3.12+
-- [uv](https://docs.astral.sh/uv/) (package manager)
+- Node.js 22+ and [pnpm](https://pnpm.io/) (for frontend)
+- [uv](https://docs.astral.sh/uv/) (Python package manager)
 - Docker & Docker Compose
 
 ### Setup
@@ -157,6 +159,28 @@ All endpoints are prefixed with `/api/v1`.
 | `GET` | `/measurements` | Query measurements (filter by machine, factory, org, time range) |
 | `POST` | `/measurements` | Ingest measurement (routing based on `INGESTION_MODE` setting) |
 | `GET` | `/measurements/statistics/{machine_id}` | Aggregate stats (min/max/avg) for a machine |
+
+## Frontend
+
+The frontend is a Next.js app in the `frontend/` directory.
+
+```bash
+cd frontend
+
+# Install dependencies
+pnpm install
+
+# Start dev server (http://localhost:3000)
+pnpm dev
+
+# Production build
+pnpm build
+
+# Lint
+pnpm lint
+```
+
+API requests from the frontend are proxied to `http://localhost:8000` via Next.js rewrites — no CORS configuration needed during development.
 
 ## Development
 
