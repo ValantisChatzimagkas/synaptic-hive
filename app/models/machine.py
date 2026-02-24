@@ -22,12 +22,9 @@ class MachineBase(BaseModel):
 
 
 class MachineCreate(MachineBase):
-    """
-    Create a machine.
-    Requires the parent factory_id.
-    """
+    """Schema for creating a machine. factory_id is provided via the URL path."""
 
-    factory_id: FactoryId
+    pass
 
 
 class MachineUpdate(MachineBase):

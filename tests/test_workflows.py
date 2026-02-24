@@ -17,10 +17,9 @@ def test_full_hierarchy_creation(client):
 
     # Factory
     factory = client.post(
-        FACTORY_API + "/",
+        f"{ORG_API}/{org_id}/factories",
         json={
             "name": "Workflow Factory",
-            "organization_id": org_id,
             "industry": "metalworking",
             "country_code": "DE",
             "city": "Stuttgart",
@@ -34,12 +33,8 @@ def test_full_hierarchy_creation(client):
 
     # Machine
     machine = client.post(
-        MACHINE_API + "/",
-        json={
-            "name": "Workflow Lathe",
-            "factory_id": factory_id,
-            "machine_type": "lathe",
-        },
+        f"{FACTORY_API}/{factory_id}/machines",
+        json={"name": "Workflow Lathe", "machine_type": "lathe"},
     )
     assert machine.status_code == 201
     machine_data = machine.json()
@@ -70,10 +65,9 @@ def test_cascade_delete_organization(client):
     org_id = org.json()["id"]
 
     factory = client.post(
-        FACTORY_API + "/",
+        f"{ORG_API}/{org_id}/factories",
         json={
             "name": "Cascade Factory",
-            "organization_id": org_id,
             "industry": "electronics",
             "country_code": "JP",
             "city": "Tokyo",
@@ -83,18 +77,13 @@ def test_cascade_delete_organization(client):
     factory_id = factory.json()["id"]
 
     machine = client.post(
-        MACHINE_API + "/",
-        json={
-            "name": "Cascade Conveyor",
-            "factory_id": factory_id,
-            "machine_type": "conveyor",
-        },
+        f"{FACTORY_API}/{factory_id}/machines",
+        json={"name": "Cascade Conveyor", "machine_type": "conveyor"},
     )
     machine_id = machine.json()["id"]
 
     # Delete org
-    response = client.delete(f"{ORG_API}/{org_id}")
-    assert response.status_code == 204
+    assert client.delete(f"{ORG_API}/{org_id}").status_code == 204
 
     # Factory and machine should be gone
     assert client.get(f"{FACTORY_API}/{factory_id}").status_code == 404
@@ -107,10 +96,9 @@ def test_cascade_delete_factory(client):
     org_id = org.json()["id"]
 
     factory = client.post(
-        FACTORY_API + "/",
+        f"{ORG_API}/{org_id}/factories",
         json={
             "name": "Delete Me Factory",
-            "organization_id": org_id,
             "industry": "textile",
             "country_code": "IT",
             "city": "Milan",
@@ -120,18 +108,13 @@ def test_cascade_delete_factory(client):
     factory_id = factory.json()["id"]
 
     machine = client.post(
-        MACHINE_API + "/",
-        json={
-            "name": "Orphan Assembly",
-            "factory_id": factory_id,
-            "machine_type": "assembly",
-        },
+        f"{FACTORY_API}/{factory_id}/machines",
+        json={"name": "Orphan Assembly", "machine_type": "assembly"},
     )
     machine_id = machine.json()["id"]
 
     # Delete factory
-    response = client.delete(f"{FACTORY_API}/{factory_id}")
-    assert response.status_code == 204
+    assert client.delete(f"{FACTORY_API}/{factory_id}").status_code == 204
 
     # Machine should be gone, org should still exist
     assert client.get(f"{MACHINE_API}/{machine_id}").status_code == 404

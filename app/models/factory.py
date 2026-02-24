@@ -28,9 +28,9 @@ class FactoryBase(BaseModel):
 
 
 class FactoryCreate(FactoryBase):
-    """Schema for creating a factory."""
+    """Schema for creating a factory. organization_id is provided via the URL path."""
 
-    organization_id: OrganizationId
+    pass
 
 
 class FactoryUpdate(FactoryBase):

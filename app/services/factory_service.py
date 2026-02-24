@@ -22,10 +22,10 @@ def get_by_id(db: Session, factory_id: UUID) -> FactoryModel | None:
     return db.query(FactoryModel).filter(FactoryModel.id == factory_id).first()
 
 
-def create(db: Session, payload: FactoryCreate):
+def create(db: Session, payload: FactoryCreate, organization_id: UUID):
     """Create a new factory"""
     factory = FactoryModel(
-        organization_id=payload.organization_id,
+        organization_id=organization_id,
         name=payload.name,
         industry=payload.industry,
         country_code=payload.country_code,
