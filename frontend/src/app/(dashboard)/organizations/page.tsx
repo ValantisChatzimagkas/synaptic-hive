@@ -16,34 +16,38 @@ export default async function OrganizationsPage() {
                 <h1 className="text-2xl font-bold">Organizations</h1>
                 <OrganizationDialog />
             </div>
-            <Table>
-                <TableHeader>
-                    <TableRow>
-                        <TableHead>Name</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Created</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {organizations.map(org => (
-                        <TableRow key={org.id}>
-                            <TableCell>
-                                <Link href={`/organizations/${org.id}`} className="hover:underline font-medium">
-                                    {org.name}
-                                </Link>
-                            </TableCell>
-                            <TableCell>
-                                <Badge variant={org.is_active ? "default" : "secondary"}>
-                                    {org.is_active ? "Active" : "Inactive"}
-                                </Badge>
-                            </TableCell>
-                            <TableCell className="text-muted-foreground text-sm">
-                                {new Date(org.created_at).toLocaleDateString()}
-                            </TableCell>
+            {organizations.length === 0 ? (
+                <p className="text-sm text-muted-foreground mt-4">No organizations yet. Create one to get started.</p>
+            ) : (
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Created</TableHead>
                         </TableRow>
-                    ))}
-                </TableBody>
-            </Table>
+                    </TableHeader>
+                    <TableBody>
+                        {organizations.map(org => (
+                            <TableRow key={org.id}>
+                                <TableCell>
+                                    <Link href={`/organizations/${org.id}`} className="hover:underline font-medium">
+                                        {org.name}
+                                    </Link>
+                                </TableCell>
+                                <TableCell>
+                                    <Badge variant={org.is_active ? "default" : "secondary"}>
+                                        {org.is_active ? "Active" : "Inactive"}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-muted-foreground text-sm">
+                                    {new Date(org.created_at).toLocaleDateString()}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            )}
         </div>
     )
 }
