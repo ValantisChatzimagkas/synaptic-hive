@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -109,12 +109,24 @@ def get_machine_statistics(
     Get aggregate statistics for a machine over a time range.
     Returns min/max/avg for all measurement types.
     """
-    stats = measurement_service.get_statistics(db, machine_id, start_time, end_time)
+    resolved_end = end_time or datetime.now(timezone.utc)
+    resolved_start = start_time or (resolved_end - timedelta(hours=24))
+
+    stats = measurement_service.get_statistics(db, machine_id, resolved_start, resolved_end)
 
     if not stats:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No measurements found for machine '{machine_id}' in the specified time range",
+        machine = machine_service.get_by_id(db, machine_id)
+        if not machine:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Machine '{machine_id}' not found",
+            )
+        return MeasurementStatistics(
+            machine_id=machine_id,
+            machine_name=machine.name,
+            time_range_start=resolved_start,
+            time_range_end=resolved_end,
+            total_measurements=0,
         )
 
     return stats

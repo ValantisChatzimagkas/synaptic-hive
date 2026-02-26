@@ -28,7 +28,7 @@ export const apiClient = {
 
     // Organization endpoints
     getOrganizations: async () => {
-        const { data } = await api.get<Organization[]>('/organizations')
+        const { data } = await api.get<Organization[]>('/organizations/')
         return data
     },
 
@@ -105,7 +105,7 @@ export const apiClient = {
 
     // Measurement endpoints
     getMeasurements: async (params?: { machine_id?: string, factory_id?: string, start_time?: string, end_time?: string, limit?: number }) => {
-        const { data } = await api.get<MeasurementEvent[]>('/measurements', { params })
+        const { data } = await api.get<MeasurementEvent[]>('/measurements/', { params })
         return data
     },
 
