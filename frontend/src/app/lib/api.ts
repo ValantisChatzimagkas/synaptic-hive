@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Factory, FactoryCreate, FactoryUpdate, Machine, MachineCreate, MachineUpdate, MeasurementEvent, MeasurementEventCreate, MeasurementStatistics, Organization, OrganizationCreate, OrganizationUpdate } from "@/types";
+import { Factory, FactoryCreate, FactoryUpdate, Machine, MachineCreate, MachineUpdate, MeasurementEvent, MeasurementEventCreate, MeasurementStatistics, Organization, OrganizationCreate, OrganizationUpdate, PlatformStats } from "@/types";
 
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -26,6 +26,12 @@ api.interceptors.response.use(
 
 export const apiClient = {
 
+    // Stats
+    getStats: async () => {
+        const { data } = await api.get<PlatformStats>('/stats/')
+        return data
+    },
+
     // Organization endpoints
     getOrganizations: async () => {
         const { data } = await api.get<Organization[]>('/organizations/')
@@ -47,7 +53,6 @@ export const apiClient = {
         return data
     },
 
-
     deleteOrganization: async (orgId:string) => {
         await api.delete(`/organizations/${orgId}`)
     },
@@ -67,7 +72,7 @@ export const apiClient = {
         const { data } = await api.post<Factory>(`/organizations/${orgId}/factories`, createData)
         return data
     },
-    
+
     updateFactory: async(factoryId: string, updateData: FactoryUpdate) => {
         const { data } = await api.patch<Factory>(`/factories/${factoryId}`, updateData)
         return data
@@ -102,7 +107,6 @@ export const apiClient = {
         await api.delete(`/machines/${machineId}`)
     },
 
-
     // Measurement endpoints
     getMeasurements: async (params?: { machine_id?: string, factory_id?: string, start_time?: string, end_time?: string, limit?: number }) => {
         const { data } = await api.get<MeasurementEvent[]>('/measurements/', { params })
@@ -118,6 +122,5 @@ export const apiClient = {
         const { data } = await api.get<MeasurementStatistics>(`/measurements/statistics/${machineId}`, { params })
         return data
     }
-
 
 }

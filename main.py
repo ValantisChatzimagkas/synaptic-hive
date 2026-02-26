@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 
-from app.api.v1 import factories, machines, measurements, organizations
+from app.api.v1 import factories, machines, measurements, organizations, stats
 from app.core.config import settings
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -40,6 +40,7 @@ app.include_router(
 )
 
 app.include_router(measurements.router, prefix=settings.API_V1_PREFIX)
+app.include_router(stats.router, prefix=settings.API_V1_PREFIX)
 
 
 @app.get("/health", tags=["Health"])

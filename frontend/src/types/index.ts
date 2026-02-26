@@ -114,6 +114,13 @@ export interface MeasurementEventCreate {
     additional_metrics?: object
 }
 
+export interface PlatformStats {
+    organizations: number
+    factories: number
+    machines: number
+    measurements_24h: number
+}
+
 export interface MeasurementStatistics {
     machine_id: string
     machine_name: string

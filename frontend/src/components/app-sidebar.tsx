@@ -1,6 +1,6 @@
 "use client"
 
-import { Building2 } from "lucide-react"
+import { Building2, LayoutDashboard } from "lucide-react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import {
@@ -18,6 +18,14 @@ export function AppSidebar() {
             </SidebarHeader>
             <SidebarContent>
                 <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton asChild isActive={pathname === "/"}>
+                            <Link href="/">
+                                <LayoutDashboard />
+                                Overview
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
                     <SidebarMenuItem>
                         <SidebarMenuButton asChild isActive={pathname.startsWith("/organizations")}>
                             <Link href="/organizations">
