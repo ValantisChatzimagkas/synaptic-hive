@@ -5,13 +5,17 @@ import {
     Table, TableBody, TableCell,
     TableHead, TableHeader, TableRow
 } from "@/components/ui/table"
+import OrganizationDialog from "./OrganizationDialog"
 
 export default async function OrganizationsPage() {
     const organizations = await apiClient.getOrganizations()
 
     return (
         <div>
-            <h1 className="text-2xl font-bold mb-6">Organizations</h1>
+            <div className="flex items-center justify-between mb-6">
+                <h1 className="text-2xl font-bold">Organizations</h1>
+                <OrganizationDialog />
+            </div>
             <Table>
                 <TableHeader>
                     <TableRow>

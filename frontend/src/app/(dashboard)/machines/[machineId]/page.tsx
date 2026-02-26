@@ -3,6 +3,8 @@ import Breadcrumbs from "@/components/breadcrumbs"
 import MachineCharts from "../MachineCharts"
 import MachineStatisticsCard from "../MachineStatisticsCard"
 import TimeRangeFilter from "../TimeRangeFilter"
+import MachineDialog from "../MachineDialog"
+import DeleteMachine from "../DeleteMachine"
 
 
 export default async function MachinePage({
@@ -29,13 +31,19 @@ export default async function MachinePage({
                 { label: factory.name, href: `/factories/${machine.factory_id}` },
                 { label: machine.name },
             ]} />
-            <div>
-                <h1 className="text-2xl font-bold">{machine.name}</h1>
-                <p className="text-sm text-muted-foreground mt-1 capitalize">
-                    {machine.machine_type.replace("_", " ")}
-                    {machine.manufacturer ? ` · ${machine.manufacturer}` : ""}
-                    {machine.model ? ` / ${machine.model}` : ""}
-                </p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold">{machine.name}</h1>
+                    <p className="text-sm text-muted-foreground mt-1 capitalize">
+                        {machine.machine_type.replace("_", " ")}
+                        {machine.manufacturer ? ` · ${machine.manufacturer}` : ""}
+                        {machine.model ? ` / ${machine.model}` : ""}
+                    </p>
+                </div>
+                <div className="flex gap-2">
+                    <MachineDialog factoryId={machine.factory_id} machine={machine} />
+                    <DeleteMachine machineId={machine.id} machineName={machine.name} factoryId={machine.factory_id} />
+                </div>
             </div>
 
             <TimeRangeFilter />
