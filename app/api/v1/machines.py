@@ -41,7 +41,7 @@ def get_all_machines(db: Session = Depends(get_db)):
 
     return [
         MachineWithContextResponse(
-            **MachineResponse.model_validate(machine).model_dump(),
+            **MachineResponse.model_validate(machine).model_dump(exclude={"last_seen_at"}),
             factory_name=factory_name,
             organization_name=organization_name,
             last_seen_at=last_seen_map.get(machine.id),
