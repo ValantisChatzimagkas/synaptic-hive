@@ -144,3 +144,13 @@ export interface MeasurementStatistics {
     torque_min?: number
     torque_max?: number
 }
+
+
+export interface AnomalyEvent {                                                                                                             
+    machine_id: string                                                                                                                      
+    timestamp: string                                                                                                                       
+    metric: string
+    value: number
+    score: number
+    detector: string
+}

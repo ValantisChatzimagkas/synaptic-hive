@@ -5,6 +5,7 @@ import MachineStatisticsCard from "../MachineStatisticsCard"
 import TimeRangeFilter from "../TimeRangeFilter"
 import MachineDialog from "../MachineDialog"
 import DeleteMachine from "../DeleteMachine"
+import AnomalyList from "../AnomalyList"
 
 
 export default async function MachinePage({
@@ -18,10 +19,11 @@ export default async function MachinePage({
     const { start_time, end_time } = await searchParams
 
     const machine = await apiClient.getMachine(machineId)
-    const [factory, stats, measurements] = await Promise.all([
+    const [factory, stats, measurements, anomalies] = await Promise.all([
         apiClient.getFactoryById(machine.factory_id),
         apiClient.getMeasurementStatistics(machineId, { start_time, end_time }),
-        apiClient.getMeasurements({ machine_id: machineId, limit: 50, start_time, end_time })
+        apiClient.getMeasurements({ machine_id: machineId, limit: 50, start_time, end_time }),
+        apiClient.getAnomalies(machineId, { start_time, end_time }),
     ])
 
     return (
@@ -49,6 +51,7 @@ export default async function MachinePage({
             <TimeRangeFilter />
             <MachineStatisticsCard stats={stats} />
             <MachineCharts measurements={measurements} />
+            <AnomalyList anomalies={anomalies} />
         </div>
     )
 }

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { Factory, FactoryCreate, FactoryUpdate, Machine, MachineCreate, MachineUpdate, MeasurementEvent, MeasurementEventCreate, MeasurementStatistics, Organization, OrganizationCreate, OrganizationUpdate, PlatformStats } from "@/types";
+import { AnomalyEvent, Factory, FactoryCreate, FactoryUpdate, Machine, MachineCreate, MachineUpdate, MeasurementEvent, MeasurementEventCreate, MeasurementStatistics, Organization, OrganizationCreate, OrganizationUpdate, PlatformStats } from "@/types";
 
 
 // Server components use API_URL (internal Docker network).
@@ -126,6 +126,11 @@ export const apiClient = {
     getMeasurementStatistics: async (machineId: string, params?: { start_time?: string, end_time?: string }) => {
         const { data } = await api.get<MeasurementStatistics>(`/measurements/statistics/${machineId}`, { params })
         return data
-    }
+    },
+
+    getAnomalies: async (machineId: string, params?: { start_time?: string; end_time?: string; limit?: number }) => {
+        const { data } = await api.get<AnomalyEvent[]>(`/machines/${machineId}/anomalies`, { params })
+        return data
+    },
 
 }
