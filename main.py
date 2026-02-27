@@ -1,14 +1,14 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import factories, machines, measurements, organizations, stats
 from app.core.config import settings
-from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     debug=settings.DEBUG,
-    redirect_slashes=False
+    redirect_slashes=False,
 )
 
 origins = [

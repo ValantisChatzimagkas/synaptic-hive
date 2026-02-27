@@ -1,11 +1,13 @@
+from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.models.anomaly import AnomalyEventResponse
 from app.models.machine import MachineCreate, MachineResponse, MachineUpdate
-from app.services import factory_service, machine_service
+from app.services import anomaly_service, factory_service, machine_service
 
 router = APIRouter(tags=["Machines"])
 
@@ -71,3 +73,20 @@ def delete_machine(machine_id: UUID, db: Session = Depends(get_db)):
             detail=f"Machine with id '{machine_id}' not found",
         )
     machine_service.delete(db, machine)
+
+
+@router.get("/machines/{machine_id}/anomalies", response_model=list[AnomalyEventResponse])
+def get_machine_anomalies(
+    machine_id: UUID,
+    start_time: datetime | None = None,
+    end_time: datetime | None = None,
+    limit: int = 100,
+    db: Session = Depends(get_db),
+):
+    """List anomaly events detected for a machine."""
+    if not machine_service.get_by_id(db, machine_id):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Machine with id '{machine_id}' not found",
+        )
+    return anomaly_service.get_anomalies(db, machine_id, start_time, end_time, limit)

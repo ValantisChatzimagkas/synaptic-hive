@@ -25,5 +25,7 @@ def get_stats(db: Session = Depends(get_db)):
         organizations=db.query(Organization).count(),
         factories=db.query(Factory).count(),
         machines=db.query(Machine).count(),
-        measurements_24h=db.query(MeasurementEvent).filter(MeasurementEvent.timestamp >= since).count(),
+        measurements_24h=db.query(MeasurementEvent)
+        .filter(MeasurementEvent.timestamp >= since)
+        .count(),
     )

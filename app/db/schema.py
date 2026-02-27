@@ -124,6 +124,7 @@ class Machine(Base):
 
     # Relationships
     factory = relationship("Factory", back_populates="machines")
+    anomalies = relationship("AnomalyEvent", back_populates="machine", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("idx_machine_factory_id", "factory_id"),
@@ -181,3 +182,24 @@ class MeasurementEvent(Base):
 
     def __repr__(self):
         return f"<MeasurementEvent(machine_id={self.machine_id}, timestamp={self.timestamp})>"
+
+
+class AnomalyEvent(Base):
+    __tablename__ = "anomaly_events"
+
+    machine_id: Mapped[UUID_TYPE] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("machines.id", ondelete="CASCADE"),
+        nullable=False,
+        primary_key=True,
+    )
+    timestamp: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, primary_key=True, server_default=func.now()
+    )
+    metric: Mapped[str] = mapped_column(String(60), nullable=False, primary_key=True)
+    value: Mapped[float] = mapped_column(Float, nullable=False)
+    score: Mapped[float] = mapped_column(Float, nullable=False)
+    detector: Mapped[str] = mapped_column(String(100), nullable=False)
+
+    # relationship
+    machine = relationship("Machine", back_populates="anomalies")

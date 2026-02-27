@@ -17,7 +17,9 @@ def get_by_id(db: Session, machine_id: UUID) -> MachineModel | None:
     return db.query(MachineModel).filter(MachineModel.id == machine_id).first()
 
 
-def create(db: Session, payload: MachineCreate, factory_id: UUID, organization_id: UUID) -> MachineModel:
+def create(
+    db: Session, payload: MachineCreate, factory_id: UUID, organization_id: UUID
+) -> MachineModel:
     """
     Create a new machine.
     factory_id and organization_id are injected from the URL path (organization_id denormalized from parent factory).
