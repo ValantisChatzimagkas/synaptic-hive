@@ -8,6 +8,9 @@ RUN addgroup --system --gid 1001 appgroup && \
 
 WORKDIR /app
 
+# Point XDG cache into /app so appuser (who owns /app) can write to it
+ENV XDG_CACHE_HOME=/app/.cache
+
 # Install dependencies (cached layer)
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev
