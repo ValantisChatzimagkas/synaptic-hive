@@ -51,7 +51,7 @@ export default async function MachinePage({
             <TimeRangeFilter />
             <MachineStatisticsCard stats={stats} />
             <MachineCharts measurements={measurements} />
-            <AnomalyList anomalies={anomalies} />
+            <AnomalyList anomalies={anomalies} stats={stats} />
         </div>
     )
 }
