@@ -146,11 +146,16 @@ export interface MeasurementStatistics {
 }
 
 
-export interface AnomalyEvent {                                                                                                             
-    machine_id: string                                                                                                                      
-    timestamp: string                                                                                                                       
+export interface AnomalyEvent {
+    machine_id: string
+    timestamp: string
     metric: string
     value: number
     score: number
     detector: string
+}
+
+export interface ActivityStats {
+    hourly_measurements: { hour: string; count: number }[]
+    top_anomalous_machines: { machine_id: string; machine_name: string; factory_name: string; organization_name: string; count: number }[]
 }

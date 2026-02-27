@@ -3,11 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Building2, Factory, Cpu, Activity } from "lucide-react"
 import Link from "next/link"
+import DashboardCharts from "./DashboardCharts"
 
 
 export default async function OverviewPage() {
-    const [stats, recentMeasurements] = await Promise.all([
+    const [stats, activity, recentMeasurements] = await Promise.all([
         apiClient.getStats(),
+        apiClient.getActivityStats(),
         apiClient.getMeasurements({ limit: 10 })
     ])
 
@@ -35,6 +37,8 @@ export default async function OverviewPage() {
                     </Card>
                 ))}
             </div>
+
+            <DashboardCharts activity={activity} />
 
             <div>
                 <h2 className="text-lg font-semibold mb-4">Recent Measurements</h2>
