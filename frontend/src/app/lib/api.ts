@@ -2,7 +2,12 @@ import axios from "axios";
 import { Factory, FactoryCreate, FactoryUpdate, Machine, MachineCreate, MachineUpdate, MeasurementEvent, MeasurementEventCreate, MeasurementStatistics, Organization, OrganizationCreate, OrganizationUpdate, PlatformStats } from "@/types";
 
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+// Server components use API_URL (internal Docker network).
+// Client components use NEXT_PUBLIC_API_URL (publicly reachable from browser).
+const API_URL =
+    typeof window === "undefined"
+        ? (process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL)
+        : process.env.NEXT_PUBLIC_API_URL
 
 
 const api = axios.create({
