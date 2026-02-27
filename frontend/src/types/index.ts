@@ -89,6 +89,11 @@ export interface MachineUpdate {
     meta?: object
 }
 
+export interface MachineWithContext extends Machine {
+    factory_name: string
+    organization_name: string
+}
+
 
 export interface MeasurementEvent {
     machine_id: string

@@ -5,13 +5,49 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
-from app.db.schema import MeasurementEvent
+from app.db.schema import Factory, Machine as MachineSchema, MeasurementEvent, Organization
 from app.db.session import get_db
 from app.models.anomaly import AnomalyEventResponse
-from app.models.machine import MachineCreate, MachineResponse, MachineUpdate
+from app.models.machine import MachineCreate, MachineResponse, MachineUpdate, MachineWithContextResponse
 from app.services import anomaly_service, factory_service, machine_service
 
 router = APIRouter(tags=["Machines"])
+
+
+@router.get("/machines", response_model=list[MachineWithContextResponse])
+def get_all_machines(db: Session = Depends(get_db)):
+    """List all machines across all factories, enriched with factory and organization names."""
+    rows = (
+        db.query(
+            MachineSchema,
+            Factory.name.label("factory_name"),
+            Organization.name.label("organization_name"),
+        )
+        .join(Factory, MachineSchema.factory_id == Factory.id)
+        .join(Organization, MachineSchema.organization_id == Organization.id)
+        .all()
+    )
+
+    if not rows:
+        return []
+
+    machines = [row[0] for row in rows]
+    last_seen_map = dict(
+        db.query(MeasurementEvent.machine_id, func.max(MeasurementEvent.timestamp))
+        .filter(MeasurementEvent.machine_id.in_([m.id for m in machines]))
+        .group_by(MeasurementEvent.machine_id)
+        .all()
+    )
+
+    return [
+        MachineWithContextResponse(
+            **MachineResponse.model_validate(machine).model_dump(),
+            factory_name=factory_name,
+            organization_name=organization_name,
+            last_seen_at=last_seen_map.get(machine.id),
+        )
+        for machine, factory_name, organization_name in rows
+    ]
 
 
 @router.get("/factories/{factory_id}/machines", response_model=list[MachineResponse])

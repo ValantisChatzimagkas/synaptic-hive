@@ -54,3 +54,10 @@ class MachineResponse(MachineBase):
     last_seen_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class MachineWithContextResponse(MachineResponse):
+    """Machine response enriched with factory and organization names for cross-factory listings."""
+
+    factory_name: str
+    organization_name: str
