@@ -17,12 +17,12 @@ class SetupGenerator:
 
     def __init__(self, api_url: str = "http://localhost:8000"):
         self.api_url = api_url
-        self.client = httpx.Client(base_url=api_url, timeout=30.0, follow_redirects=True)
+        self.client = httpx.Client(base_url=f"{api_url}/api/v1/", timeout=30.0, follow_redirects=True)
 
     def create_organization(self, name: str) -> dict[str, Any]:
         """Create an organization."""
         payload = {"name": name, "is_active": True}
-        response = self.client.post("/api/v1/organizations", json=payload)
+        response = self.client.post("organizations/", json=payload)
         response.raise_for_status()
         org = response.json()
         print(f"Created organization: {org['name']} ({org['id']})")
@@ -38,7 +38,6 @@ class SetupGenerator:
     ) -> dict[str, Any]:
         """Create a factory."""
         payload = {
-            "organization_id": str(organization_id),
             "name": name,
             "industry": industry.value,
             "country_code": country_code,
@@ -46,7 +45,7 @@ class SetupGenerator:
             "postal_code": f"{random.randint(10000, 99999)}",
             "is_active": True,
         }
-        response = self.client.post("/api/v1/factories", json=payload)
+        response = self.client.post(f"organizations/{organization_id}/factories", json=payload)
         response.raise_for_status()
         factory = response.json()
         print(f"   Created factory: {factory['name']} ({factory['id']})")
@@ -68,14 +67,13 @@ class SetupGenerator:
         }
 
         payload = {
-            "factory_id": str(factory_id),
             "name": name,
             "machine_type": machine_type.value,
             "manufacturer": random.choice(manufacturers.get(machine_type, ["Generic"])),
             "serial_number": f"{machine_type.value.upper()}-{random.randint(1000, 9999)}",
             "meta": {},
         }
-        response = self.client.post("/api/v1/machines", json=payload)
+        response = self.client.post(f"factories/{factory_id}/machines", json=payload)
         response.raise_for_status()
         machine = response.json()
         print(f"      Created machine: {machine['name']} ({machine['id']})")

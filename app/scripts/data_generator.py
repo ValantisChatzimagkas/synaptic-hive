@@ -43,7 +43,7 @@ class MachineSimulator:
         self.machine_id = machine_id
         self.machine_type = machine_type
         self.api_url = api_url
-        self.client = httpx.Client(base_url=api_url, timeout=10.0, follow_redirects=True)
+        self.client = httpx.Client(base_url=f"{api_url}/api/v1/", timeout=10.0, follow_redirects=True)
 
     def generate_measurement(self) -> Measurement:
         """
@@ -127,7 +127,7 @@ class MachineSimulator:
         try:
             # Convert dataclass to dict, exclude None values
             payload = {k: v for k, v in asdict(measurement).items() if v is not None}
-            response = self.client.post("/api/v1/measurements", json=payload)
+            response = self.client.post("measurements/", json=payload)
             response.raise_for_status()
             return True
         except httpx.HTTPStatusError as e:
