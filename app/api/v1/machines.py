@@ -2,8 +2,10 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.db.schema import MeasurementEvent
 from app.db.session import get_db
 from app.models.anomaly import AnomalyEventResponse
 from app.models.machine import MachineCreate, MachineResponse, MachineUpdate
@@ -20,7 +22,19 @@ def get_machines(factory_id: UUID, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Factory with id '{factory_id}' not found",
         )
-    return machine_service.get_all(db, factory_id=factory_id)
+    machines = machine_service.get_all(db, factory_id=factory_id)
+
+    last_seen_map = dict(
+        db.query(MeasurementEvent.machine_id, func.max(MeasurementEvent.timestamp))
+        .filter(MeasurementEvent.machine_id.in_([m.id for m in machines]))
+        .group_by(MeasurementEvent.machine_id)
+        .all()
+    ) if machines else {}
+
+    return [
+        MachineResponse.model_validate(m).model_copy(update={"last_seen_at": last_seen_map.get(m.id)})
+        for m in machines
+    ]
 
 
 @router.post(
@@ -48,7 +62,12 @@ def get_machine(machine_id: UUID, db: Session = Depends(get_db)):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Machine with id '{machine_id}' not found",
         )
-    return machine
+    last_seen = (
+        db.query(func.max(MeasurementEvent.timestamp))
+        .filter(MeasurementEvent.machine_id == machine_id)
+        .scalar()
+    )
+    return MachineResponse.model_validate(machine).model_copy(update={"last_seen_at": last_seen})
 
 
 @router.patch("/machines/{machine_id}", response_model=MachineResponse)

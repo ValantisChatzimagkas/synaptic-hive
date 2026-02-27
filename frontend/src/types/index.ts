@@ -68,6 +68,7 @@ export interface Machine {
     serial_number?: string
     meta: object
     installed_at: string
+    last_seen_at?: string | null
 }
 
 export interface MachineCreate {

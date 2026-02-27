@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Annotated, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -50,5 +51,6 @@ class MachineResponse(MachineBase):
     factory_id: FactoryId
     organization_id: OrganizationId
     installed_at: InstalledAt
+    last_seen_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)

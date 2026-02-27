@@ -5,6 +5,7 @@ import Link from "next/link"
 import FactoryDialog from "../FactoryDialog"
 import DeleteFactory from "../DeleteFactory"
 import MachineDialog from "../../machines/MachineDialog"
+import MachineStatusBadge from "@/components/machine-status-badge"
 
 
 export default async function FactoryPage({ params }: { params: Promise<{ factoryId: string }> }) {
@@ -43,6 +44,7 @@ export default async function FactoryPage({ params }: { params: Promise<{ factor
                 <TableHeader>
                     <TableRow>
                         <TableHead>Name</TableHead>
+                        <TableHead>Status</TableHead>
                         <TableHead>Type</TableHead>
                         <TableHead>Manufacturer / Model</TableHead>
                         <TableHead>Serial Number</TableHead>
@@ -57,6 +59,7 @@ export default async function FactoryPage({ params }: { params: Promise<{ factor
                                     {machine.name}
                                 </Link>
                             </TableCell>
+                            <TableCell><MachineStatusBadge lastSeenAt={machine.last_seen_at} /></TableCell>
                             <TableCell className="capitalize">{machine.machine_type.replace("_", " ")}</TableCell>
                             <TableCell className="text-muted-foreground text-sm">
                                 {machine.manufacturer ?? "—"}{machine.model ? ` / ${machine.model}` : ""}

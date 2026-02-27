@@ -1,5 +1,6 @@
 import { apiClient } from "@/app/lib/api"
 import Breadcrumbs from "@/components/breadcrumbs"
+import MachineStatusBadge from "@/components/machine-status-badge"
 import MachineCharts from "../MachineCharts"
 import MachineStatisticsCard from "../MachineStatisticsCard"
 import TimeRangeFilter from "../TimeRangeFilter"
@@ -41,6 +42,7 @@ export default async function MachinePage({
                         {machine.manufacturer ? ` · ${machine.manufacturer}` : ""}
                         {machine.model ? ` / ${machine.model}` : ""}
                     </p>
+                    <div className="mt-1"><MachineStatusBadge lastSeenAt={machine.last_seen_at} /></div>
                 </div>
                 <div className="flex gap-2">
                     <MachineDialog factoryId={machine.factory_id} machine={machine} />
