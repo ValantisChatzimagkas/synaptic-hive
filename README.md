@@ -97,7 +97,7 @@ CI runs `ruff check` and the same test suite against a TimescaleDB service conta
 
 ## Design decisions
 
-**TimescaleDB hypertables.** Measurements are append-heavy and almost always queried by time range. `measurement_events` is converted to a hypertable (in an Alembic migration), which partitions it by time and keeps time-bounded queries and retention manageable as data grows. The composite primary key `(machine_id, timestamp)` includes the partitioning column, as hypertables require.
+**TimescaleDB hypertables.** Measurements are append-heavy and almost always queried by time range. `measurement_events` is converted to a hypertable (in an Alembic migration), which partitions it into time-based chunks so that time-bounded queries only touch the relevant chunks as data grows. The composite primary key `(machine_id, timestamp)` includes the partitioning column, as hypertables require.
 
 **Sync vs async ingestion.** `INGESTION_MODE=sync` writes each measurement in the request, which is simple and gives immediate read-after-write. `INGESTION_MODE=async` (the default) publishes to a Redis Stream and returns `202`, decoupling request latency from database writes and letting the worker batch inserts. The trade-off is eventual consistency and an extra process to run. Both paths share one endpoint; only configuration changes.
 
