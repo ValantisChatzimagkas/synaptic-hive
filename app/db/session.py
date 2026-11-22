@@ -7,12 +7,8 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import settings
 
-# Alembic already stripped +asyncpg, but here we use
-# the sync driver directly since we're using sync SQLAlchemy
-SYNC_DATABASE_URL = settings.DATABASE_URL.replace("+asyncpg", "")
-
 engine = create_engine(
-    SYNC_DATABASE_URL,
+    settings.DATABASE_URL,
     pool_size=10,
     max_overflow=20,
     pool_pre_ping=True,  # Verifies connection is alive before using it

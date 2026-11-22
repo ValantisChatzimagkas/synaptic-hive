@@ -12,8 +12,7 @@ from app.db.schema import Base  # All models must be imported via Base
 config = context.config
 
 # Set the database URL from your settings
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL.replace("+asyncpg", ""))
-# Note: Alembic uses sync driver, so we strip +asyncpg
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
 
 # Interpret the config file for Python logging
 if config.config_file_name is not None:
