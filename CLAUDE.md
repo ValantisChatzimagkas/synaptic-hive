@@ -26,8 +26,11 @@ Synaptic Hive is a multi-tenant Industrial IoT monitoring platform built with Fa
 # Install dependencies
 uv sync
 
-# Start infrastructure (TimescaleDB + Redis)
-docker-compose up -d
+# Run the whole backend (TimescaleDB, Redis, API with migrations, worker)
+docker compose up --build
+
+# Or only the infrastructure, to run the API from source
+docker compose up -d timescaledb redis
 
 # Run database migrations
 alembic upgrade head
@@ -52,15 +55,13 @@ ruff format .
 python -m app.scripts.setup_generator "OrgName" --factories 2 --machines 3
 python -m app.scripts.data_generator
 
-# Frontend (from frontend/ directory)
-pnpm dev        # Start dev server on http://localhost:3000
-pnpm build      # Production build
-pnpm lint       # Run ESLint
+# Run the Redis Stream worker (needed when INGESTION_MODE=async)
+python -m app.workers.measurement_worker
 ```
 
 ## Environment
 
-Requires `.env` file with `DATABASE_URL` and `REDIS_URL`. Docker credentials go in `.env.docker`. Python 3.12+. Frontend requires Node.js 22+ and pnpm.
+Running from source requires `DATABASE_URL` and `REDIS_URL` (set in the environment or a `.env` file, see `.env.example`). Docker Compose builds them itself from optional `POSTGRES_*` variables and publishes ports from `DB_PORT`, `API_PORT` and `REDIS_PORT`. Python 3.12+.
 
 ## Architecture
 
@@ -72,13 +73,13 @@ Requires `.env` file with `DATABASE_URL` and `REDIS_URL`. Docker credentials go 
 - `app/core/` — Config (Pydantic BaseSettings), dependencies, Redis client singleton
 - `app/workers/` — Redis Stream consumers for async measurement ingestion
 - `app/scripts/` — Data generation and simulation utilities
-- `frontend/` — Next.js frontend (App Router, TypeScript, Tailwind CSS)
 
 **Key patterns:**
 - Sync SQLAlchemy with `get_db()` dependency for session lifecycle
 - MeasurementEvent table is heavily denormalized (stores machine_name, factory_name, etc.) to avoid JOINs on time-series queries
 - Composite PK `(machine_id, timestamp)` on MeasurementEvent for TimescaleDB hypertable optimization
 - Single ingestion endpoint (`POST /measurements/`) with config-based routing: `INGESTION_MODE=async` queues via Redis Streams, `INGESTION_MODE=sync` writes directly to DB
+- No authentication yet: tenant scoping is by ID only (see README, Limitations)
 - All entities use UUID primary keys
 - Update endpoints use PATCH semantics with `model_dump(exclude_unset=True)`
 
