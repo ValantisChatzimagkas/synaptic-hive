@@ -53,10 +53,10 @@ The scripts in `app/scripts` call the HTTP API, so the stack must be running. Ru
 uv sync
 
 # Create an organization with factories and machines, then stream simulated measurements
-uv run python -m app.scripts.run_simulation "Siemens Manufacturing" --factories 2 --machines 3
+uv run python -m app.scripts.run_simulation "Acme Manufacturing" --factories 2 --machines 3
 
 # Only create the hierarchy
-uv run python -m app.scripts.run_simulation "Siemens Manufacturing" --setup-only
+uv run python -m app.scripts.run_simulation "Acme Manufacturing" --setup-only
 
 # Simulate a single existing machine
 uv run python -m app.scripts.data_generator <machine-uuid> welding --duration 60
