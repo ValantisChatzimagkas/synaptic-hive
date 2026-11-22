@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    services:
+      timescaledb:
+        image: timescale/timescaledb:latest-pg16
+        env:
+          POSTGRES_USER: iot_user
+          POSTGRES_PASSWORD: iot_password
+          POSTGRES_DB: iot_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U iot_user -d iot_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://iot_user:iot_password@localhost:5432/iot_db
+      REDIS_URL: redis://localhost:6379/0
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10
+      - name: Install dependencies
+        run: uv sync
+      - name: Lint
+        run: uvx ruff check .
+      - name: Test
+        run: uv run pytest -q

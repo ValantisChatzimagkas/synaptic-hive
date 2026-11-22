@@ -1,5 +1,7 @@
 # Synaptic Hive
 
+[![CI](https://github.com/ValantisChatzimagkas/synaptic-hive/actions/workflows/ci.yml/badge.svg)](https://github.com/ValantisChatzimagkas/synaptic-hive/actions/workflows/ci.yml)
+
 A multi-tenant Industrial IoT monitoring platform built with FastAPI, TimescaleDB, and Redis.
 
 ## What is this?
@@ -50,7 +52,7 @@ Organization
 
 ```bash
 # 1. Clone the repo
-git clone <repo-url> && cd synaptic-hive
+git clone https://github.com/ValantisChatzimagkas/synaptic-hive.git && cd synaptic-hive
 
 # 2. Install dependencies
 uv sync
@@ -211,3 +213,7 @@ pytest tests/test_organizations.py
 # Run a specific test
 pytest tests/test_organizations.py::test_create_organization -v
 ```
+
+## License
+
+[MIT](LICENSE)
