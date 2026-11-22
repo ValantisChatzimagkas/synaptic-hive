@@ -6,7 +6,7 @@ from app.db.schema import Factory as FactoryModel
 from app.models.factory import FactoryCreate, FactoryUpdate
 
 
-def get_all(db: Session, organization_id: UUID | None) -> list[FactoryModel] | None:
+def get_all(db: Session, organization_id: UUID | None = None) -> list[FactoryModel]:
     """Fetch all factories.
     If `organization_id` is provided, fetch all factories for given organization
     """

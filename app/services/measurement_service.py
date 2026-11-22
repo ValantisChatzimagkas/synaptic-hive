@@ -61,9 +61,9 @@ def get_measurements(
     # Filter by entity hierarchy
     if machine_id:
         query = query.filter(MeasurementModel.machine_id == machine_id)
-    elif factory_id:
+    if factory_id:
         query = query.filter(MeasurementModel.factory_id == factory_id)
-    elif organization_id:
+    if organization_id:
         query = query.filter(MeasurementModel.organization_id == organization_id)
 
     # Time range filter (critical for time-series performance)
