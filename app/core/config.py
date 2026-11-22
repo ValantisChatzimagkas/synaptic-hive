@@ -30,7 +30,7 @@ class Settings(BaseSettings):
     @classmethod
     def must_not_be_empty(cls, v: str, info) -> str:
         if not v:
-            raise ValueError(f"{info.field_name} must be set in .env file")
+            raise ValueError(f"{info.field_name} must be set (environment or .env file)")
         return v
 
 

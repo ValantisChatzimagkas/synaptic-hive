@@ -4,6 +4,7 @@ Redis streaming service for async measurement ingestion.
 """
 
 import json
+from datetime import datetime, timezone
 from typing import Any, cast
 from uuid import UUID
 
@@ -20,6 +21,13 @@ def publish_measurement(
     """
     Publish a measurement to Redis Stream.
     """
+    # Stamp at ingestion time so a queued measurement keeps its arrival time
+    # instead of getting the worker's processing time.
+    if measurement_payload.timestamp is None:
+        measurement_payload = measurement_payload.model_copy(
+            update={"timestamp": datetime.now(timezone.utc)}
+        )
+
     # Use Pydantic's JSON serializer for the measurement (handles datetime, etc.)
     message: dict[str, str] = {
         "machine_id": str(machine_id),
@@ -34,8 +42,3 @@ def publish_measurement(
 
     return message_id.decode() if isinstance(message_id, bytes) else str(message_id)
 
-
-def get_stream_length() -> int:
-    """Get the current length of the measurements stream."""
-    length = redis_client.client.xlen(settings.REDIS_STREAM_NAME)
-    return cast(int, length)

@@ -12,8 +12,8 @@ router = APIRouter(prefix="/machines", tags=["Machines"])
 
 @router.get("/", response_model=list[MachineResponse])
 def get_machines(
-    factory_id: UUID = Query(None, description="Filter by factory by ID"),
-    organization_id: UUID = Query(None, description="Filter by organization ID"),
+    factory_id: UUID | None = Query(None, description="Filter by factory ID"),
+    organization_id: UUID | None = Query(None, description="Filter by organization ID"),
     db: Session = Depends(get_db),
 ):
     """

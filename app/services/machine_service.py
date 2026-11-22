@@ -6,7 +6,9 @@ from app.db.schema import Machine as MachineModel
 from app.models.machine import MachineCreate, MachineUpdate
 
 
-def get_all(db: Session, factory_id: UUID, organization_id: UUID) -> list[MachineModel] | None:
+def get_all(
+    db: Session, factory_id: UUID | None = None, organization_id: UUID | None = None
+) -> list[MachineModel]:
     """
     Fetch all machines.
     Optionally, filter by factory_id or organization_id

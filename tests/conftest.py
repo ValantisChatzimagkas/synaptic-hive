@@ -19,7 +19,7 @@ from app.enums import IndustryType, MachineType
 # ---------------------------------------------------------------------------
 # Derive test database URL from the main DATABASE_URL
 # ---------------------------------------------------------------------------
-_base_url = settings.DATABASE_URL.replace("+asyncpg", "")
+_base_url = settings.DATABASE_URL
 # Replace the database name at the end of the URL
 _parts = _base_url.rsplit("/", 1)
 TEST_DATABASE_URL = f"{_parts[0]}/iot_db_test"

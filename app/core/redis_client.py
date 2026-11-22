@@ -1,5 +1,4 @@
 import redis
-from redis.exceptions import RedisError
 
 from app.core.config import settings
 
@@ -26,13 +25,6 @@ class RedisClient:
     def client(self) -> redis.Redis:
         """Get Redis client instance"""
         return self._client
-
-    def ping(self) -> bool:
-        """Check if Redis is ready"""
-        try:
-            return self._client.ping()
-        except RedisError:
-            return False
 
 
 redis_client = RedisClient()
