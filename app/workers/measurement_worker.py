@@ -1,9 +1,13 @@
 import json
+import logging
 import signal
 import time
 from datetime import datetime, timezone
+from typing import Any
 from uuid import UUID
 
+from redis.exceptions import ResponseError
+from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
@@ -11,10 +15,18 @@ from app.core.redis_client import redis_client
 from app.db.schema import MeasurementEvent
 from app.db.session import SessionLocal
 
+logger = logging.getLogger("measurement_worker")
+
 
 class MeasurementWorker:
     """
-    Worker that processes measurements from Redis Stream.
+    Consumes measurements from a Redis Stream and writes them to the database.
+
+    Delivery is at-least-once: a message is acknowledged only after its batch is
+    committed, and unacknowledged messages are re-read on the next iteration.
+    Inserts ignore (machine_id, timestamp) conflicts, so redelivery never
+    produces duplicates or failed batches. Messages that cannot be parsed are
+    logged and acknowledged, since retrying cannot fix them.
     """
 
     def __init__(
@@ -43,158 +55,140 @@ class MeasurementWorker:
 
     def _signal_handler(self, signum, frame):
         """Handle shutdown signals gracefully."""
-        print(f"\n  Received signal {signum}, shutting down gracefully...")
+        logger.info("Received signal %s, shutting down", signum)
         self.running = False
 
     def ensure_consumer_group(self):
-        """Create consumer group if it doesn't exist."""
+        """Create consumer group (and stream) if they don't exist."""
         try:
             redis_client.client.xgroup_create(
                 name=self.stream_name,
                 groupname=self.consumer_group,
                 id="0",  # Start from beginning
-                mkstream=True,  # Create stream if it doesn't exist
+                mkstream=True,
             )
-            print(f"Created consumer group: {self.consumer_group}")
-        except Exception as e:
-            # Group already exists
-            if "BUSYGROUP" in str(e):
-                print(f"Consumer group already exists: {self.consumer_group}")
-            else:
-                print(f"Error creating consumer group: {e}")
+            logger.info("Created consumer group: %s", self.consumer_group)
+        except ResponseError as e:
+            if "BUSYGROUP" not in str(e):
+                raise
+            logger.info("Consumer group already exists: %s", self.consumer_group)
 
-    def process_batch(self, messages: list, db: Session) -> int:
-        """
-        Process a batch of messages and write to database.
+    @staticmethod
+    def _parse_message(message_data: dict[str, str]) -> dict[str, Any]:
+        """Convert a stream message into a measurement_events row."""
+        measurement = json.loads(message_data["measurement"])
+        denormalized = json.loads(message_data["denormalized"])
+        timestamp = measurement.get("timestamp")
 
-        Returns: Number of successfully processed messages.
+        return {
+            "machine_id": UUID(measurement["machine_id"]),
+            "timestamp": datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+            if timestamp
+            else datetime.now(timezone.utc),
+            "organization_id": UUID(denormalized["organization_id"]),
+            "voltage": measurement.get("voltage"),
+            "current": measurement.get("current"),
+            "rpm": measurement.get("rpm"),
+            "torque": measurement.get("torque"),
+            "additional_metrics": measurement.get("additional_metrics", {}),
+            "machine_name": denormalized["machine_name"],
+            "machine_type": denormalized["machine_type"],
+            "factory_id": UUID(denormalized["factory_id"]),
+            "factory_name": denormalized["factory_name"],
+        }
+
+    def process_batch(self, messages: list, db: Session) -> list[str]:
         """
-        measurements = []
+        Persist a batch of messages.
+
+        Returns the IDs that are safe to acknowledge (stored or unparseable).
+        Raises on database errors, leaving the whole batch unacknowledged.
+        """
+        rows = []
+        ack_ids = []
 
         for message_id, message_data in messages:
+            ack_ids.append(message_id)
             try:
-                # Parse message fields
-                measurement_json = message_data.get("measurement", "{}")
-                denormalized_json = message_data.get("denormalized", "{}")
-
-                measurement_dict = json.loads(measurement_json)
-                denormalized_dict = json.loads(denormalized_json)
-
-                # Create MeasurementEvent object
-                measurement = MeasurementEvent(
-                    machine_id=UUID(measurement_dict["machine_id"]),
-                    timestamp=datetime.fromisoformat(
-                        measurement_dict["timestamp"].replace("Z", "+00:00")
-                    )
-                    if measurement_dict.get("timestamp")
-                    else datetime.now(timezone.utc),
-                    organization_id=UUID(denormalized_dict["organization_id"]),
-                    voltage=measurement_dict.get("voltage"),
-                    current=measurement_dict.get("current"),
-                    rpm=measurement_dict.get("rpm"),
-                    torque=measurement_dict.get("torque"),
-                    additional_metrics=measurement_dict.get("additional_metrics", {}),
-                    machine_name=denormalized_dict["machine_name"],
-                    machine_type=denormalized_dict["machine_type"],
-                    factory_id=UUID(denormalized_dict["factory_id"]),
-                    factory_name=denormalized_dict["factory_name"],
-                )
-
-                measurements.append(measurement)
-
-            except Exception as e:
-                print(f"Error parsing message {message_id}: {e}")
+                rows.append(self._parse_message(message_data))
+            except (KeyError, ValueError, TypeError, AttributeError) as e:
+                logger.error("Dropping malformed message %s: %s", message_id, e)
                 self.error_count += 1
-                continue
 
-        # Batch insert to database
-        if measurements:
+        if rows:
             try:
-                db.bulk_save_objects(measurements)
+                db.execute(insert(MeasurementEvent).values(rows).on_conflict_do_nothing())
                 db.commit()
-                self.processed_count += len(measurements)
-                return len(measurements)
-            except Exception as e:
-                print(f"Database error: {e}")
+            except Exception:
                 db.rollback()
-                self.error_count += len(measurements)
-                return 0
+                raise
+            self.processed_count += len(rows)
 
-        return 0
+        return ack_ids
 
     def run(self):
-        """
-        Main worker loop.
-        Reads from Redis Stream and processes messages in batches.
-        """
-        print("   Starting Measurement Worker")
-        print(f"   Stream: {self.stream_name}")
-        print(f"   Consumer Group: {self.consumer_group}")
-        print(f"   Consumer Name: {self.consumer_name}")
-        print(f"   Batch Size: {self.batch_size}")
-        print(f"   Block Time: {self.block_ms}ms\n")
+        """Main worker loop: read from the stream, persist, acknowledge."""
+        logger.info(
+            "Starting worker: stream=%s group=%s consumer=%s batch_size=%d",
+            self.stream_name,
+            self.consumer_group,
+            self.consumer_name,
+            self.batch_size,
+        )
 
-        # Ensure consumer group exists
         self.ensure_consumer_group()
-
         db = SessionLocal()
+
+        # "0" re-reads this consumer's unacknowledged messages (left over from a
+        # crash or a failed batch); ">" reads only new messages.
+        read_id = "0"
 
         try:
             while self.running:
                 try:
-                    # Read messages from stream
-                    # XREADGROUP GROUP <group> <consumer> COUNT <count> BLOCK <ms> STREAMS <stream> >
-                    messages = redis_client.client.xreadgroup(
+                    response = redis_client.client.xreadgroup(
                         groupname=self.consumer_group,
                         consumername=self.consumer_name,
-                        streams={self.stream_name: ">"},  # ">" = only new messages
+                        streams={self.stream_name: read_id},
                         count=self.batch_size,
                         block=self.block_ms,
                     )
+                    messages = response[0][1] if response else []
 
                     if not messages:
+                        read_id = ">"
                         continue
 
-                    # Process messages
-                    for stream_name, stream_messages in messages:
-                        if stream_messages:
-                            processed = self.process_batch(stream_messages, db)
+                    ack_ids = self.process_batch(messages, db)
+                    redis_client.client.xack(self.stream_name, self.consumer_group, *ack_ids)
+                    logger.info(
+                        "Processed batch of %d (total: %d, errors: %d)",
+                        len(ack_ids),
+                        self.processed_count,
+                        self.error_count,
+                    )
 
-                            if processed > 0:
-                                # Acknowledge processed messages
-                                message_ids = [msg_id for msg_id, _ in stream_messages]
-                                redis_client.client.xack(
-                                    self.stream_name,
-                                    self.consumer_group,
-                                    *message_ids,
-                                )
-
-                                print(
-                                    f"Processed batch: {processed} measurements "
-                                    f"(Total: {self.processed_count}, Errors: {self.error_count})"
-                                )
-
-                except Exception as e:
-                    print(f"Worker error: {e}")
+                except Exception:
+                    logger.exception("Worker error, retrying unacknowledged messages")
+                    read_id = "0"
                     time.sleep(1)  # Backoff on error
-
-        except KeyboardInterrupt:
-            print("\n Interrupted by user")
 
         finally:
             db.close()
             elapsed = time.time() - self.start_time
-            print("\n Worker Statistics:")
-            print(f"   Processed: {self.processed_count}")
-            print(f"   Errors: {self.error_count}")
-            print(f"   Runtime: {elapsed:.1f}s")
-            print(f"   Rate: {self.processed_count / elapsed:.2f} msg/sec")
+            logger.info(
+                "Worker stopped: processed=%d errors=%d runtime=%.1fs rate=%.2f msg/s",
+                self.processed_count,
+                self.error_count,
+                elapsed,
+                self.processed_count / elapsed,
+            )
 
 
 def main():
     """Entry point for the worker."""
-    worker = MeasurementWorker()
-    worker.run()
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    MeasurementWorker().run()
 
 
 if __name__ == "__main__":
