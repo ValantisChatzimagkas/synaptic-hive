@@ -1,100 +1,63 @@
-# CLAUDE.md
+# Synaptic Hive
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Multi-tenant industrial IoT monitoring backend: FastAPI, TimescaleDB, Redis Streams. Organizations → Factories → Machines → MeasurementEvents, with measurements in a TimescaleDB hypertable. A portfolio project to show data engineering and backend skills on a realistic data volume. The plan and issues live in the Linear project **Synaptic Hive** (team `SOL`); break work into small steps and progress at a steady pace.
 
-## Project Overview
+## Purpose and direction
+- Multi-tenancy: an organization keeps track of its factories and the machines in them.
+- Later: spot early production-line issues and machine anomalies (anomaly detection).
+- Authentication and role-based access only when it really makes sense; today there is none (see README, Limitations).
+- After the backend: a simple frontend to inspect and interact with an organization's data, plus an analytics section.
 
-Synaptic Hive is a multi-tenant Industrial IoT monitoring platform built with FastAPI, TimescaleDB, and Redis. It manages a hierarchy of Organizations → Factories → Machines → MeasurementEvents, with time-series data optimized via TimescaleDB hypertables.
+## Commands
+- `make help` → every target. `make setup` → `uv sync --locked` + `.env` from `.env.example`.
+- `make check` → lint and tests, exactly what CI runs. **Must pass before you call a task done.** Tests need TimescaleDB: `make infra` first.
+- `make fmt` → format + sort imports. One test: `uv run pytest tests/test_machines.py -k create`.
+- `make dev` → TimescaleDB + Redis in Docker, migrations, API with reload on :8000. `make worker` → stream consumer. `make up` → whole stack in Docker.
+- `make migration m="..."` / `make migrate` → Alembic. Never edit an applied migration; add a new one.
+- Deps: `uv add <pkg>` / `uv add --dev <pkg>`; never edit `uv.lock` by hand.
+- Demo data: `uv run python -m app.scripts.run_simulation "Acme Manufacturing" --factories 2 --machines 3` (stack must be running).
 
-## Project purpose
-* Showcase my data engineering and backend skills
-* implement a solution that can handle a reasonable volume of data
-* Support multi-tenancy concept by offering an easy way an organization can keep track of it's factories and machines inside these factories
-* A later goal is to make it easy to check early issues regarding the production line and detecting anomalies in machines. ( like anomaly detection)
-* I would eventually need authentication and maybe some Role Based Access enforcement and maybe protect in such way the endpoints (we must go that deep only if it really makes sense)
-* After all the backend work is done I would like to build simple yet helpful frontend that can make it possible to inspect and interact the data an organization has under factories and machines in the factories, also some analytics section would be also nice to have.
+## Layout
+- `app/api/v1/` route handlers (REST under `/api/v1`). `app/services/` business logic and queries, one service per entity.
+- `app/db/schema.py` all SQLAlchemy ORM models. `app/models/` Pydantic request/response schemas; shared annotated types in `app/models/common.py`.
+- `app/enums.py` `IndustryType`, `MachineType`. `app/core/` config (Pydantic `BaseSettings`), dependencies, Redis client.
+- `app/workers/` Redis Stream consumers. `app/scripts/` demo-data generators that call the HTTP API.
+- `alembic/` migrations. `tests/` pytest against a real `iot_db_test` database with transaction rollback; Redis is `fakeredis`.
 
+## Key patterns
+- Sync SQLAlchemy; `get_db()` dependency owns the session lifecycle. All entities use UUID primary keys.
+- Schemas per entity: `*Base` (shared fields), `*Create` (POST body), `*Update` (all optional, PATCH with `model_dump(exclude_unset=True)`), `*Response` (DB fields, `from_attributes=True`).
+- `MeasurementEvent` is denormalized (machine/factory names) to avoid joins on time-series queries; composite PK `(machine_id, timestamp)` for the hypertable.
+- One ingestion endpoint (`POST /measurements/`); `INGESTION_MODE=async` publishes to a Redis Stream, `sync` writes directly. The worker acks only after commit and inserts ignore `(machine_id, timestamp)` conflicts: at-least-once without duplicates. Keep it that way.
+- No authentication yet: tenant scoping is by ID only.
 
 ## Coding standards
-1. I want this to be as clean as possible and pragmatic without over-engineering or doing unecessary optimization or plans ahead, respect the YAGNI principle
-2. The code should follow the SOLID software engineering coding standards, but must be reasonable when they really need to be applied and it must make sense
-3. Code must be consistent in terms of patterns, design aspects and data types
+- Clean and pragmatic. YAGNI: no over-engineering, no premature optimization, no "for later" code.
+- SOLID where it earns its keep, not by reflex.
+- Consistent patterns, design and data types across entities: a new entity looks like the existing ones.
 
-## Common Commands
+## Before writing code: extend, don't add
+- Search before adding a function, schema, service, dependency or fixture; extend the closest one. Name what you reused, or why nothing fit.
+- Smallest diff that solves the task. No drive-by refactors, speculative abstractions or config flags. Extract a helper on the second real use. Delete dead code.
+- **New dependency, new top-level folder or new infrastructure service: propose it first** and say what code or risk it removes; put the why in the commit.
+- ORM change → Alembic migration in the same commit (`make migration`), reviewed by hand before committing.
 
-```bash
-# Install dependencies
-uv sync
+## Tests
+- Test through the HTTP API (`TestClient`) or the public function someone calls, not private helpers. No mocks of our own code.
+- New behaviour or bug fix gets a test that fails before the change. Variants of one rule go in one `pytest.mark.parametrize` table.
 
-# Run the whole backend (TimescaleDB, Redis, API with migrations, worker)
-docker compose up --build
+## Docs: one home per fact, fixed in the same commit
+- `README.md`: what it is, how to run it, limitations. `CLAUDE.md`: rules for changing code. `.env.example`: env vars. `Makefile`: commands. Docs link to these; they don't copy them.
+- A change that makes a doc wrong fixes it in the same commit. Keep this file under ~100 lines: cut a stale rule before adding one.
 
-# Or only the infrastructure, to run the API from source
-docker compose up -d timescaledb redis
+## Gotchas
+- Running from source needs `DATABASE_URL` and `REDIS_URL` (`.env`, see `.env.example`); Compose builds its own from `POSTGRES_*`. Ports come from `DB_PORT`, `API_PORT`, `REDIS_PORT`: set `DB_PORT` if 5432 is taken, and match `DATABASE_URL`.
+- Ruff: 100-char lines, rules E, W, F, I, N, UP, E501 ignored.
 
-# Run database migrations
-alembic upgrade head
+## Agent setup (`.claude/`)
+- `settings.json`: `.env` unreadable, `uv.lock` not hand-editable, Python auto-formatted on edit, `make lint` re-run when you stop, and `hooks/block-dangerous-git.sh` blocks pushes to `main`, force-push, `reset --hard`, `clean -f`, `branch -D` and `checkout .`/`restore .`.
+- After a non-trivial change, run the `reviewer` agent on the diff and fix what it finds.
+- Linear issues only through the `linear-issue` skill; PRs only through the `pull-request` skill.
 
-# Create a new migration
-alembic revision --autogenerate -m "description"
-
-# Start dev server
-uvicorn main:app --reload
-
-# Run tests
-pytest
-
-# Run tests with coverage
-pytest --cov --cov-report=term-missing
-
-# Lint
-ruff check .
-ruff format .
-
-# Generate test data
-python -m app.scripts.setup_generator "OrgName" --factories 2 --machines 3
-python -m app.scripts.data_generator
-
-# Run the Redis Stream worker (needed when INGESTION_MODE=async)
-python -m app.workers.measurement_worker
-```
-
-## Environment
-
-Running from source requires `DATABASE_URL` and `REDIS_URL` (set in the environment or a `.env` file, see `.env.example`). Docker Compose builds them itself from optional `POSTGRES_*` variables and publishes ports from `DB_PORT`, `API_PORT` and `REDIS_PORT`. Python 3.12+.
-
-## Architecture
-
-**Layered structure:**
-- `app/api/v1/` — FastAPI route handlers (REST endpoints under `/api/v1`)
-- `app/services/` — Business logic and database queries (one service per entity)
-- `app/db/schema.py` — All SQLAlchemy ORM models in a single file
-- `app/models/` — Pydantic request/response schemas (Base/Create/Update/Response pattern)
-- `app/core/` — Config (Pydantic BaseSettings), dependencies, Redis client singleton
-- `app/workers/` — Redis Stream consumers for async measurement ingestion
-- `app/scripts/` — Data generation and simulation utilities
-
-**Key patterns:**
-- Sync SQLAlchemy with `get_db()` dependency for session lifecycle
-- MeasurementEvent table is heavily denormalized (stores machine_name, factory_name, etc.) to avoid JOINs on time-series queries
-- Composite PK `(machine_id, timestamp)` on MeasurementEvent for TimescaleDB hypertable optimization
-- Single ingestion endpoint (`POST /measurements/`) with config-based routing: `INGESTION_MODE=async` queues via Redis Streams, `INGESTION_MODE=sync` writes directly to DB
-- No authentication yet: tenant scoping is by ID only (see README, Limitations)
-- All entities use UUID primary keys
-- Update endpoints use PATCH semantics with `model_dump(exclude_unset=True)`
-
-**Pydantic schema convention:** Each entity has `*Base` (shared fields), `*Create` (POST body), `*Update` (all optional for PATCH), `*Response` (includes DB fields, `from_attributes=True`). Reusable annotated types live in `app/models/common.py`.
-
-**Enums** (`app/enums.py`): `IndustryType` (automotive, metalworking, etc.) and `MachineType` (welding, press, lathe, etc.) shared across models and schemas.
-
-## Linting
-
-Ruff with 100-char line length. Rules: E, W, F, I, N, UP. E501 (line too long) is ignored.
-
-
-
-## What I need from you
-1. Enforce what has been specified in the coding standards section in a new branch and work there the refactoring needed
-2. Make sure what we have done so far makes sense, is coherent, pragmatic and follows the best practices where they make sense (so that we don't overengineer and break YAGNI principle)
-3. Tidy up things and enforce consistency and better organization of code and the project itself
-4. I would ask you to help me in the things and steps I need to build in this project so that we break things step by step and progress with a steady pace.
+## Commits
+Conventional Commits with the issue ID: `feat(ingestion): batch stream inserts (SOL-123)`. Small and focused. Never commit `.env`.

@@ -1,15 +1,29 @@
-# Python-generated files
+# Secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Python
 __pycache__/
-*.py[oc]
+*.py[cod]
+.venv/
 build/
 dist/
 wheels/
-*.egg-info
-.env
-.env.docker
+*.egg-info/
 
-# Virtual environments
-.venv
-
-# Coverage
+# Tooling caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
 .coverage
+
+# Editors and OS
+.idea/
+.vscode/
+.DS_Store
+
+# Agent-local (personal, not shared)
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/worktrees/

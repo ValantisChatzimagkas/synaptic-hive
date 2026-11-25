@@ -41,4 +41,3 @@ def publish_measurement(
     )
 
     return message_id.decode() if isinstance(message_id, bytes) else str(message_id)
-

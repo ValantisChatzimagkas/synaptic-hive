@@ -88,12 +88,12 @@ docker run -d --rm --name hive-testdb \
 
 DATABASE_URL=postgresql://iot_user:iot_password@localhost:5433/iot_db \
 REDIS_URL=redis://localhost:6379/0 \
-uv run pytest -q
+make check
 
 docker stop hive-testdb
 ```
 
-CI runs `ruff check` and the same test suite against a TimescaleDB service container.
+`make check` runs the lint (ruff format check and ruff) and the tests; CI runs the same target against a TimescaleDB service container. With a `.env` from `make setup`, `make infra && make check` works too. `make help` lists the other commands.
 
 ## Design decisions
 
