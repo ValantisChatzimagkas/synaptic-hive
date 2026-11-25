@@ -1,0 +1,16 @@
+version: 2
+# Monthly and grouped: one PR per ecosystem fits a 1–2 hour/day budget.
+# Cooldown skips brand-new releases. Security updates ignore both and open immediately.
+updates:
+  - package-ecosystem: uv
+    directory: /
+    schedule: { interval: monthly }
+    cooldown: { default-days: 7 }
+    groups: { python: { patterns: ["*"] } }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: monthly }
+    groups: { actions: { patterns: ["*"] } }
+  - package-ecosystem: docker
+    directory: /
+    schedule: { interval: monthly }
